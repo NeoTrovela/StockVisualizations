@@ -1,0 +1,1039 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>FAANG Interactive Explorer</title>
+  <style>
+    :root {
+      --bg: #f7f9fb;
+      --panel: #ffffff;
+      --muted: #64748b;
+      --accent: #2563eb;
+      --grid: rgba(148, 163, 184, 0.3);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: "Inter", "Segoe UI", -apple-system, system-ui, sans-serif;
+      color: #0f172a;
+      background: var(--bg);
+      min-height: 100vh;
+    }
+
+    .page {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 28px 20px 60px;
+    }
+
+    .hero {
+      display: grid;
+      grid-template-columns: 1.3fr 1fr;
+      gap: 24px;
+      align-items: center;
+      margin-bottom: 18px;
+    }
+
+    .eyebrow {
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--muted);
+      font-size: 12px;
+      margin-bottom: 6px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 32px;
+      letter-spacing: -0.02em;
+    }
+
+    p {
+      margin: 10px 0;
+      color: #1f2937;
+      line-height: 1.6;
+    }
+
+    .pill-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    .pill {
+      background: #e2e8f0;
+      border: 1px solid #cbd5e1;
+      padding: 6px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      color: #0f172a;
+    }
+
+    .hero-card {
+      background: var(--panel);
+      border: 1px solid #e2e8f0;
+      padding: 16px 18px;
+      border-radius: 10px;
+      box-shadow: 0 6px 16px rgba(15, 23, 42, 0.08);
+    }
+
+    .hero-card h3 {
+      margin: 4px 0 8px;
+      font-size: 18px;
+    }
+
+    .hero-list {
+      margin: 0;
+      padding-left: 18px;
+      color: #1f2937;
+      line-height: 1.5;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 260px 1fr;
+      gap: 16px;
+      align-items: start;
+    }
+
+    #controls {
+      background: var(--panel);
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      padding: 16px;
+      position: sticky;
+      top: 16px;
+    }
+
+    #controls h3 {
+      margin: 4px 0 10px;
+      font-size: 18px;
+    }
+
+    .chip-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      border-radius: 12px;
+      background: #f1f5f9;
+      padding: 6px 10px;
+      border: 1px solid #e2e8f0;
+      cursor: pointer;
+      font-size: 13px;
+      transition: background-color 150ms ease, border-color 150ms ease, transform 120ms ease, box-shadow 150ms ease;
+    }
+
+    .chip input { display: none; }
+
+    .chip span {
+      font-weight: 600;
+    }
+
+    .chip.active {
+      background: #dbeafe;
+      border-color: #2563eb;
+      box-shadow: 0 6px 14px rgba(37, 99, 235, 0.15);
+      animation: selectPulse 140ms ease-out;
+    }
+
+    @keyframes selectPulse {
+      from { transform: scale(0.98); }
+      to { transform: scale(1); }
+    }
+
+    .summary {
+      margin-top: 12px;
+      padding: 10px;
+      border-radius: 8px;
+      background: #f8fafc;
+      color: #0f172a;
+      line-height: 1.5;
+      font-size: 14px;
+    }
+
+    .control-label {
+      margin: 14px 0 6px;
+      font-weight: 600;
+      font-size: 13px;
+      color: #0f172a;
+    }
+
+    .date-row {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .date-row input {
+      padding: 6px 8px;
+      border-radius: 6px;
+      border: 1px solid #cbd5e1;
+      font-size: 13px;
+      color: #0f172a;
+      background: #ffffff;
+    }
+
+    .note {
+      margin-top: 10px;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 12px;
+      background: #2563eb;
+      border: 1px solid #1d4ed8;
+      border-radius: 8px;
+      color: #ffffff;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 120ms ease, transform 120ms ease;
+    }
+
+    .btn.secondary {
+      background: #e2e8f0;
+      border-color: #cbd5e1;
+      color: #0f172a;
+    }
+
+    .btn:hover { transform: translateY(-1px); }
+
+    #viz-area {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .chart-card {
+      background: var(--panel);
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      padding: 12px 12px 4px;
+      box-shadow: 0 6px 16px rgba(15, 23, 42, 0.08);
+    }
+
+    .chart-title {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      padding: 4px 8px 8px;
+    }
+
+    .chart-title h2 {
+      margin: 2px 0 0;
+      font-size: 20px;
+      letter-spacing: -0.01em;
+    }
+
+    .grid-two {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+
+    svg {
+      width: 100%;
+      background: #ffffff;
+      border-radius: 8px;
+      overflow: visible;
+    }
+
+    .axis path, .axis line {
+      stroke: var(--grid);
+    }
+
+    .axis text {
+      fill: var(--muted);
+      font-size: 12px;
+    }
+
+    .price-line, .overview-line {
+      fill: none;
+    }
+
+    .inline-label {
+      font-size: 12px;
+      dominant-baseline: middle;
+      pointer-events: none;
+      font-weight: 600;
+    }
+
+    .focus-line {
+      stroke: rgba(100, 116, 139, 0.7);
+      stroke-width: 1.2px;
+      stroke-dasharray: 3 3;
+    }
+
+    .hover-capture {
+      fill: transparent;
+      cursor: crosshair;
+    }
+
+    .tooltip {
+      position: fixed;
+      pointer-events: none;
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      color: #0f172a;
+      padding: 10px 12px;
+      border-radius: 8px;
+      box-shadow: 0 10px 30px rgba(15, 23, 42, 0.12);
+      font-size: 13px;
+      opacity: 0;
+      transition: opacity 80ms ease;
+    }
+
+    .tooltip-date {
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+
+    .tooltip-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      line-height: 1.4;
+    }
+
+    .legend {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      flex-wrap: wrap;
+      color: var(--muted);
+      font-size: 12px;
+      padding: 0 8px 8px;
+    }
+
+    .legend span {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .legend .dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      display: inline-block;
+    }
+
+    .axis-label {
+      fill: #cbd5e1;
+      font-size: 12px;
+    }
+
+    .empty {
+      fill: #cbd5e1;
+      font-size: 14px;
+    }
+
+    @media (max-width: 1024px) {
+      .hero {
+        grid-template-columns: 1fr;
+      }
+      .layout {
+        grid-template-columns: 1fr;
+      }
+      .grid-two {
+        grid-template-columns: 1fr;
+      }
+      #controls {
+        position: static;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <header class="hero">
+      <div>
+        <div class="eyebrow">Assignment 3 · Interactive Visualization</div>
+        <h1>FAANG Price &amp; Volume Explorer</h1>
+        <p>Dynamic queries, brushing, and linking over daily OHLC + volume for Amazon, Apple, Google, Meta, and Netflix. Use the overview brush to filter the time window, toggle companies, and probe cross-views to see how price momentum, volatility, and liquidity relate.</p>
+      </div>
+    </header>
+
+    <section class="layout">
+      <aside id="controls">
+        <h3>Filters</h3>
+        <div id="company-picker" class="chip-row"></div>
+        <div style="margin-top: 12px; display: flex; gap: 8px; flex-wrap: wrap;">
+          <button id="reset-selection" class="btn secondary">Reset companies</button>
+          <button id="reset-brush" class="btn secondary">Reset brush</button>
+        </div>
+        <div class="control-label">Date range</div>
+        <div class="date-row">
+          <input type="date" id="start-date">
+          <input type="date" id="end-date">
+        </div>
+        <div class="summary" id="summary"></div>
+      </aside>
+
+      <main id="viz-area">
+        <div class="chart-card">
+          <div class="chart-title">
+            <div>
+              <div class="eyebrow">Prices</div>
+              <h2>Close price over time</h2>
+            </div>
+            <div class="legend" id="legend"></div>
+          </div>
+          <svg id="price-chart"></svg>
+          <div style="margin: 6px 0 4px 8px;" class="eyebrow">Overview · brush to filter</div>
+          <svg id="overview-chart"></svg>
+        </div>
+
+        <div class="grid-two">
+          <div class="chart-card">
+            <div class="chart-title">
+              <div>
+                <div class="eyebrow">Volume</div>
+                <h2>Monthly volume share</h2>
+              </div>
+            </div>
+            <svg id="volume-chart"></svg>
+          </div>
+
+          <div class="chart-card">
+            <div class="chart-title">
+              <div>
+                <div class="eyebrow">Returns</div>
+                <h2>Daily return vs volume</h2>
+              </div>
+            </div>
+            <svg id="scatter-chart"></svg>
+          </div>
+        </div>
+      </main>
+    </section>
+  </div>
+
+  <div id="tooltip" class="tooltip"></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+  <script>
+    const companies = [
+      { name: "Apple", file: "data/Apple.csv" },
+      { name: "Amazon", file: "data/Amazon.csv" },
+      { name: "Google", file: "data/Google.csv" },
+      { name: "Facebook", file: "data/Facebook.csv" },
+      { name: "Netflix", file: "data/Netflix.csv" }
+    ];
+
+    const color = d3.scaleOrdinal()
+      .domain(companies.map(d => d.name))
+      .range(["#f97316", "#22c55e", "#38bdf8", "#7c5dfa", "#f43f5e"]);
+
+    const parseDate = d3.timeParse("%Y-%m-%d");
+    const fmtDate = d3.timeFormat("%b %d, %Y");
+    const fmtInput = d3.timeFormat("%Y-%m-%d");
+
+    const priceSvg = d3.select("#price-chart");
+    const overviewSvg = d3.select("#overview-chart");
+    const volumeSvg = d3.select("#volume-chart");
+    const scatterSvg = d3.select("#scatter-chart");
+    const tooltip = d3.select("#tooltip");
+    const startInput = d3.select("#start-date");
+    const endInput = d3.select("#end-date");
+
+    let allRows = [];
+    let dataExtent = null;
+    let overviewBrush = null;
+    let overviewX = null;
+    let state = {
+      selected: new Set(companies.map(d => d.name)),
+      range: null
+    };
+
+    // Load CSVs and boot the UI.
+    Promise.all(
+      companies.map((c) =>
+        d3.csv(c.file, (d) => ({
+          company: c.name,
+          date: parseDate(d.Date),
+          open: +d.Open,
+          high: +d.High,
+          low: +d.Low,
+          close: +d.Close,
+          adjClose: +d["Adj Close"],
+          volume: +d.Volume
+        }))
+      )
+    ).then((results) => {
+      results.forEach((rows) => {
+        rows.sort((a, b) => a.date - b.date);
+        let prev = null;
+        rows.forEach((row) => {
+          row.return = prev ? ((row.close - prev) / prev) * 100 : null;
+          prev = row.close;
+          allRows.push(row);
+        });
+      });
+
+      dataExtent = d3.extent(allRows, (d) => d.date);
+      state.range = [d3.timeYear.offset(dataExtent[1], -5), dataExtent[1]];
+
+      initUI();
+      update();
+    });
+
+    function initUI() {
+      const picker = d3.select("#company-picker");
+      picker
+        .selectAll("label")
+        .data(companies)
+        .join("label")
+        .attr("class", "chip")
+        .each(function (d) {
+          const label = d3.select(this);
+          label
+            .append("input")
+            .attr("type", "checkbox")
+            .attr("value", d.name)
+            .property("checked", true)
+            .on("change", function () {
+              if (this.checked) {
+                state.selected.add(d.name);
+              } else {
+                state.selected.delete(d.name);
+                if (state.selected.size === 0) {
+                  state.selected.add(d.name);
+                  this.checked = true;
+                }
+              }
+              updateChipStyles();
+              update();
+            });
+
+          label
+            .append("span")
+            .text(d.name)
+            .style("color", color(d.name));
+        });
+
+      d3.select("#reset-selection").on("click", () => {
+        state.selected = new Set(companies.map((c) => c.name));
+        picker.selectAll("input").property("checked", true);
+        updateChipStyles();
+        update();
+      });
+
+      d3.select("#reset-brush").on("click", () => {
+        state.range = null;
+        update();
+      });
+
+      startInput.on("change", onDateInputChange);
+      endInput.on("change", onDateInputChange);
+
+      window.addEventListener("resize", () => update());
+      renderLegend();
+      syncDateInputs();
+      updateChipStyles();
+    }
+
+    function renderLegend() {
+      const legend = d3.select("#legend");
+      legend
+        .selectAll("span")
+        .data(companies)
+        .join("span")
+        .html(
+          (d) => `<span class="dot" style="background:${color(d.name)}"></span>${d.name}`
+        );
+    }
+
+    function update() {
+      const selectedRows = allRows.filter((d) => state.selected.has(d.company));
+      const filteredRows = state.range
+        ? selectedRows.filter(
+            (d) => d.date >= state.range[0] && d.date <= state.range[1]
+          )
+        : selectedRows;
+
+      updateChipStyles();
+      syncDateInputs();
+      updateSummary(filteredRows);
+      renderPrice(filteredRows);
+      renderOverview(selectedRows);
+      renderVolume(filteredRows);
+      renderScatter(filteredRows);
+    }
+
+    function getSeries(rows) {
+      const grouped = d3.group(rows, (d) => d.company);
+      return Array.from(grouped, ([name, values]) => ({
+        name,
+        values: values.slice().sort((a, b) => a.date - b.date)
+      }));
+    }
+
+    function renderPrice(filteredRows) {
+      const svg = priceSvg;
+      const width = getWidth(svg.node());
+      const height = 320;
+      const margin = { top: 16, right: 80, bottom: 36, left: 60 };
+      const innerWidth = width - margin.left - margin.right;
+      const innerHeight = height - margin.top - margin.bottom;
+
+      svg.attr("width", width).attr("height", height);
+      svg.selectAll("*").remove();
+
+      const series = getSeries(filteredRows.length ? filteredRows : allRows);
+      const xDomain =
+        filteredRows.length > 1
+          ? d3.extent(filteredRows, (d) => d.date)
+          : dataExtent;
+      const x = d3.scaleTime().domain(xDomain).range([margin.left, width - margin.right]);
+      const yMax = d3.max(series, (s) => d3.max(s.values, (d) => d.close)) || 1;
+      const yMin = d3.min(series, (s) => d3.min(s.values, (d) => d.close)) || 0;
+      const y = d3
+        .scaleLinear()
+        .domain([yMin * 0.95, yMax * 1.05])
+        .range([height - margin.bottom, margin.top]);
+
+      const xAxis = (g) =>
+        g.attr("transform", `translate(0,${height - margin.bottom})`).call(
+          d3.axisBottom(x).ticks(width < 700 ? 5 : 8)
+        );
+      const yAxis = (g) =>
+        g
+          .attr("transform", `translate(${margin.left},0)`)
+          .call(d3.axisLeft(y).ticks(6).tickFormat(d3.format("$,.0f")))
+          .call((g) => g.select(".domain").remove());
+
+      svg.append("g").attr("class", "axis").call(xAxis);
+      svg.append("g").attr("class", "axis").call(yAxis);
+
+      const line = d3
+        .line()
+        .x((d) => x(d.date))
+        .y((d) => y(d.close));
+
+      svg
+        .append("g")
+        .selectAll("path")
+        .data(series)
+        .join("path")
+        .attr("class", "price-line")
+        .attr("stroke", (d) => color(d.name))
+        .attr("stroke-width", 2)
+        .attr("opacity", (d) => (state.selected.has(d.name) ? 1 : 0.2))
+        .attr("d", (d) => line(d.values));
+
+      svg
+        .append("g")
+        .selectAll("text")
+        .data(series)
+        .join("text")
+        .attr("class", "inline-label")
+        .attr("x", (d) => x(d.values[d.values.length - 1].date) + 6)
+        .attr("y", (d) => y(d.values[d.values.length - 1].close))
+        .attr("fill", (d) => color(d.name))
+        .text((d) => d.name);
+
+      const focusLine = svg
+        .append("line")
+        .attr("class", "focus-line")
+        .attr("y1", margin.top)
+        .attr("y2", height - margin.bottom)
+        .style("display", "none");
+
+      svg
+        .append("rect")
+        .attr("class", "hover-capture")
+        .attr("x", margin.left)
+        .attr("y", margin.top)
+        .attr("width", innerWidth)
+        .attr("height", innerHeight)
+        .on("mousemove", (event) => {
+          const [mx] = d3.pointer(event, svg.node());
+          const hoveredDate = x.invert(mx);
+          const rows = series
+            .map((s) => {
+              const idx = d3.bisector((d) => d.date).center(s.values, hoveredDate);
+              const point = s.values[idx];
+              if (!point) return null;
+              return { ...point, name: s.name };
+            })
+            .filter(Boolean);
+
+          if (!rows.length) return;
+          focusLine
+            .style("display", "block")
+            .attr("x1", mx)
+            .attr("x2", mx);
+
+          positionTooltip(renderTooltip(rows, hoveredDate), event);
+        })
+        .on("mouseleave", () => {
+          focusLine.style("display", "none");
+          tooltip.style("opacity", 0);
+        });
+    }
+
+    function renderTooltip(rows, date) {
+      const rowsHtml = rows
+        .sort((a, b) => b.close - a.close)
+        .map(
+          (r) =>
+            `<div class="tooltip-row"><span style="color:${color(r.name)};">●</span>${r.name}: $${r.close.toFixed(
+              2
+            )}</div>`
+        )
+        .join("");
+      return `<div class="tooltip-date">${fmtDate(date)}</div>${rowsHtml}`;
+    }
+
+    function renderOverview(selectedRows) {
+      const svg = overviewSvg;
+      const width = getWidth(svg.node());
+      const height = 110;
+      const margin = { top: 8, right: 40, bottom: 24, left: 60 };
+
+      svg.attr("width", width).attr("height", height);
+      svg.selectAll("*").remove();
+
+      const series = getSeries(selectedRows);
+      const x = d3.scaleTime().domain(dataExtent).range([margin.left, width - margin.right]);
+      const yMax = d3.max(series, (s) => d3.max(s.values, (d) => d.close)) || 1;
+      const y = d3
+        .scaleLinear()
+        .domain([0, yMax * 1.05])
+        .range([height - margin.bottom, margin.top]);
+
+      svg
+        .append("g")
+        .attr("class", "axis")
+        .attr("transform", `translate(0,${height - margin.bottom})`)
+        .call(d3.axisBottom(x).ticks(width < 700 ? 4 : 6));
+
+      svg
+        .append("g")
+        .attr("class", "axis")
+        .attr("transform", `translate(${margin.left},0)`)
+        .call(d3.axisLeft(y).ticks(3))
+        .call((g) => g.select(".domain").remove());
+
+      const line = d3
+        .line()
+        .x((d) => x(d.date))
+        .y((d) => y(d.close));
+
+      svg
+        .append("g")
+        .selectAll("path")
+        .data(series)
+        .join("path")
+        .attr("class", "overview-line")
+        .attr("stroke", (d) => color(d.name))
+        .attr("stroke-width", 1.3)
+        .attr("opacity", 0.6)
+        .attr("d", (d) => line(d.values));
+
+      overviewX = x;
+      const brushMargin = margin;
+
+      if (!overviewBrush) {
+        overviewBrush = d3
+          .brushX()
+          .extent([
+            [brushMargin.left, brushMargin.top],
+            [width - brushMargin.right, height - brushMargin.bottom]
+          ])
+          // only fire after the user finishes brushing
+          .on("end", brushed);
+      } else {
+        overviewBrush.extent([
+          [brushMargin.left, brushMargin.top],
+          [width - brushMargin.right, height - brushMargin.bottom]
+        ]);
+      }
+
+
+      const brushG = svg.selectAll(".brush").data([null]).join("g").attr("class", "brush");
+      brushG.call(overviewBrush);
+
+      if (state.range) {
+        brushG.call(overviewBrush.move, state.range.map((d) => x(d)));
+      } else {
+        brushG.call(overviewBrush.move, null);
+      }
+
+      function brushed(event) {
+        if (!event.sourceEvent) return;
+        if (!event.selection) {
+          state.range = null;
+        } else {
+          const [x0, x1] = event.selection;
+          state.range = [x.invert(x0), x.invert(x1)];
+        }
+        syncDateInputs();
+        update();
+      }
+    }
+
+    function renderVolume(filteredRows) {
+      const svg = volumeSvg;
+      const width = getWidth(svg.node());
+      const height = 260;
+      const margin = { top: 16, right: 24, bottom: 34, left: 60 };
+
+      svg.attr("width", width).attr("height", height);
+      svg.selectAll("*").remove();
+
+      const monthly = buildMonthlyVolume(filteredRows);
+      if (!monthly.length) {
+        svg
+          .append("text")
+          .attr("class", "empty")
+          .attr("x", width / 2)
+          .attr("y", height / 2)
+          .attr("text-anchor", "middle")
+          .text("No data in view");
+        return;
+      }
+
+      const selectedKeys = Array.from(state.selected);
+      const x = d3
+        .scaleTime()
+        .domain(d3.extent(monthly, (d) => d.date))
+        .range([margin.left, width - margin.right]);
+
+      const y = d3
+        .scaleLinear()
+        .domain([
+          0,
+          d3.max(monthly, (d) =>
+            selectedKeys.reduce((sum, key) => sum + (d[key] || 0), 0)
+          ) * 1.05
+        ])
+        .range([height - margin.bottom, margin.top]);
+
+      svg
+        .append("g")
+        .attr("class", "axis")
+        .attr("transform", `translate(0,${height - margin.bottom})`)
+        .call(d3.axisBottom(x).ticks(width < 700 ? 4 : 7));
+
+      svg
+        .append("g")
+        .attr("class", "axis")
+        .attr("transform", `translate(${margin.left},0)`)
+        .call(d3.axisLeft(y).ticks(5, "~s"))
+        .call((g) => g.select(".domain").remove());
+
+      const stack = d3.stack().keys(selectedKeys);
+      const stacked = stack(monthly);
+
+      const area = d3
+        .area()
+        .x((d) => x(d.data.date))
+        .y0((d) => y(d[0]))
+        .y1((d) => y(d[1]));
+
+      svg
+        .append("g")
+        .selectAll("path")
+        .data(stacked)
+        .join("path")
+        .attr("fill", (d) => color(d.key))
+        .attr("opacity", 0.82)
+        .attr("d", area);
+
+      svg
+        .append("text")
+        .attr("class", "axis-label")
+        .attr("x", margin.left)
+        .attr("y", margin.top - 4)
+        .text("Stacked volume · monthly");
+    }
+
+    function buildMonthlyVolume(rows) {
+      const selected = Array.from(state.selected);
+      const monthly = d3.rollup(
+        rows,
+        (v) => d3.sum(v, (d) => d.volume),
+        (d) => d3.timeMonth(d.date),
+        (d) => d.company
+      );
+
+      const res = Array.from(monthly, ([month, companies]) => {
+        const obj = { date: new Date(month) };
+        selected.forEach((name) => {
+          obj[name] = companies.get(name) || 0;
+        });
+        return obj;
+      }).sort((a, b) => a.date - b.date);
+
+      return res;
+    }
+
+    function renderScatter(filteredRows) {
+      const svg = scatterSvg;
+      const width = getWidth(svg.node());
+      const height = 280;
+      const margin = { top: 16, right: 20, bottom: 46, left: 70 };
+
+      svg.attr("width", width).attr("height", height);
+      svg.selectAll("*").remove();
+
+      const points = filteredRows.filter((d) => d.return !== null);
+      if (!points.length) {
+        svg
+          .append("text")
+          .attr("class", "empty")
+          .attr("x", width / 2)
+          .attr("y", height / 2)
+          .attr("text-anchor", "middle")
+          .text("No data in view");
+        return;
+      }
+
+      const x = d3.scaleLinear().domain(d3.extent(points, (d) => d.return)).nice()
+        .range([margin.left, width - margin.right]);
+      const y = d3.scaleLog().domain(d3.extent(points, (d) => d.volume)).nice()
+        .range([height - margin.bottom, margin.top]);
+      const r = d3.scaleSqrt().domain(d3.extent(points, (d) => d.close)).range([2.5, 9]);
+
+      svg
+        .append("g")
+        .attr("class", "axis")
+        .attr("transform", `translate(0,${height - margin.bottom})`)
+        .call(d3.axisBottom(x).ticks(6).tickFormat((d) => `${d}%`));
+
+      svg
+        .append("g")
+        .attr("class", "axis")
+        .attr("transform", `translate(${margin.left},0)`)
+        .call(d3.axisLeft(y).ticks(6, "~s"))
+        .call((g) => g.select(".domain").remove());
+
+      svg
+        .append("g")
+        .attr("fill-opacity", 0.7)
+        .selectAll("circle")
+        .data(points)
+        .join("circle")
+        .attr("cx", (d) => x(d.return))
+        .attr("cy", (d) => y(d.volume))
+        .attr("r", (d) => r(d.close))
+        .attr("fill", (d) => color(d.company))
+        .on("mousemove", (event, d) => {
+          positionTooltip(
+            `<div class="tooltip-date">${fmtDate(d.date)} · ${d.company}</div>
+             <div class="tooltip-row">Close: $${d.close.toFixed(2)}</div>
+             <div class="tooltip-row">Return: ${d.return.toFixed(2)}%</div>
+             <div class="tooltip-row">Volume: ${d3.format(",")(d.volume)}</div>`,
+            event
+          );
+        })
+        .on("mouseleave", () => tooltip.style("opacity", 0));
+
+      svg
+        .append("text")
+        .attr("class", "axis-label")
+        .attr("x", width / 2)
+        .attr("y", height - 6)
+        .attr("text-anchor", "middle")
+        .text("Daily return (%)");
+
+      svg
+        .append("text")
+        .attr("class", "axis-label")
+        .attr("transform", `rotate(-90)`)
+        .attr("x", -height / 2)
+        .attr("y", margin.left - 50)
+        .attr("text-anchor", "middle")
+        .text("Volume (log scale)");
+    }
+
+    function updateSummary(filteredRows) {
+      const summary = d3.select("#summary");
+      const selection = Array.from(state.selected);
+      const rangeText = state.range
+        ? `${fmtDate(state.range[0])} → ${fmtDate(state.range[1])}`
+        : "Full history";
+
+      summary.html(`
+        <div><strong>Companies:</strong> ${selection.join(", ")}</div>
+        <div><strong>Window:</strong> ${rangeText}</div>
+        <div><strong>Points in view:</strong> ${filteredRows.length.toLocaleString()}</div>
+      `);
+    }
+
+    function onDateInputChange() {
+      const startVal = startInput.property("value");
+      const endVal = endInput.property("value");
+      if (!startVal || !endVal) return;
+      const start = new Date(startVal);
+      const end = new Date(endVal);
+      if (start > end) return;
+      state.range = [start, end];
+      update();
+    }
+
+    function syncDateInputs() {
+      if (!dataExtent) return;
+      const start = state.range ? state.range[0] : dataExtent[0];
+      const end = state.range ? state.range[1] : dataExtent[1];
+      startInput.attr("min", fmtInput(dataExtent[0])).attr("max", fmtInput(dataExtent[1]));
+      endInput.attr("min", fmtInput(dataExtent[0])).attr("max", fmtInput(dataExtent[1]));
+      startInput.property("value", fmtInput(start));
+      endInput.property("value", fmtInput(end));
+    }
+
+    function positionTooltip(html, event) {
+      tooltip.html(html).style("opacity", 1);
+      const padding = 12;
+      const rect = tooltip.node().getBoundingClientRect();
+      const vw = window.innerWidth;
+      const vh = window.innerHeight;
+      const { clientX, clientY } = event;
+
+      let x = clientX + padding;
+      if (x + rect.width + padding > vw) {
+        x = clientX - rect.width - padding;
+      }
+      if (x < 8) x = 8;
+
+      let y = clientY - 10;
+      if (y + rect.height + padding > vh) {
+        y = clientY - rect.height - padding;
+      }
+      if (y < 8) y = 8;
+
+      tooltip.style("left", `${x}px`).style("top", `${y}px`);
+    }
+
+    function getWidth(svgNode) {
+      if (!svgNode) return 960;
+      const parent = svgNode.parentNode;
+      const rect = parent.getBoundingClientRect();
+      return rect.width ? rect.width : 960;
+    }
+
+    function updateChipStyles() {
+      d3.select("#company-picker")
+        .selectAll("label")
+        .classed("active", (d) => state.selected.has(d.name));
+    }
+  </script>
+</body>
+</html>
