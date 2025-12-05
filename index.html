@@ -986,7 +986,7 @@
         .attr("x", -height / 2)
         .attr("y", margin.left - 55)
         .attr("text-anchor", "middle")
-        .text("Avg daily high–low range ($)");
+        .text("Avg daily high–low range (%)");
     }
 
 
@@ -1202,6 +1202,7 @@
       const returns = calculateInvestmentReturns(filteredRows);
       
       // make investment returns into HTML
+      // green if profit is positive, red if negative
       const returnsHtml = returns.length > 0 ? `
         <div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid #e2e8f0;">
           <strong>$${state.investmentAmount.toLocaleString()} Investment Returns</strong>
@@ -1209,9 +1210,9 @@
             <div style="margin-top: 8px; padding: 8px; background: ${r.profit >= 0 ? '#d4edda' : '#f8d7da'}; border-radius: 6px; border: 1px solid ${r.profit >= 0 ? '#c3e6cb' : '#f5c6cb'};">
               <div style="font-weight: 600; color: ${color(r.company)}; margin-bottom: 4px;">${r.company}</div>
               <div style="font-size: 13px;">
-                <div>Final Value: <strong>$${r.finalValue.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</strong></div>
+                <div>Final Value: <strong>$${r.finalValue.toFixed(2)}</strong></div>
                 <div style="color: ${r.profit >= 0 ? '#155724' : '#721c24'}; font-weight: 600;">
-                  ${r.profit >= 0 ? '+' : ''}$${r.profit.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})} 
+                  ${r.profit >= 0 ? '+' : ''}$${r.profit.toFixed(2)} 
                   (${r.percentReturn >= 0 ? '+' : ''}${r.percentReturn.toFixed(2)}%)
                 </div>
               </div>
