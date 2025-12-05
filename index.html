@@ -426,11 +426,8 @@
         </figure>
 
         <section class="grid-two">
-          <!-- ******************TODO: NORMALIZED PRICE CHART (Left Chart)************************** -->
-          <!-- 
-               All stocks start at 100 -> shows relative % growth
-               Helps a lot with easy comparison -> which stock performed best?
-          -->
+          <!-- VOLUME BY COMPANY (Left Chart)***-->
+          <!-- volume of shares traded per stock in selected period -->
           <figure class="chart-card">
             <figcaption class="chart-title">
               <header>
@@ -442,26 +439,19 @@
           </figure>
 
 
-          <!-- ******************TODO: VOLATILITY CHART (Right Chart)************************** -->
-          <!-- 
-               Bars showing daily high-low range
-               Shows which stocks are riskier/more stable
+          <!-- VOLATILITY CHART (Right Chart) -->
+          <!-- Bars showing daily high-low spread -> sjows which stocks are riskier/more stable
           -->
           <figure class="chart-card">
             <figcaption class="chart-title">
               <header>
                 <p class="eyebrow">Risk</p>
-                <h2>Price Volatility (%)</h2>
+                <h2>Price Volatility</h2>
               </header>
             </figcaption>
             <svg id="volatility-chart" role="img" aria-label="Volatility chart showing daily price ranges"></svg>
           </figure>
         </section>
-
-        <!-- ******************TODO: CORRELATION HEATMAP (OPTIONAL)************************** -->
-        <!-- 
-             Grid showing which stocks move together
-        -->
       </main>
     </article>
   </div>
@@ -492,16 +482,16 @@
     // const scatterSvg = d3.select("#scatter-chart");
     const normalizedSvg = d3.select("#normalized-chart");
     const volatilitySvg = d3.select("#volatility-chart");
-    // const heatmapSvg = d3.select("#heatmap-chart"); if we decide to add a heatmap
+    // const heatmapSvg = d3.select("#heatmap-chart")
     const tooltip = d3.select("#tooltip");
     const startInput = d3.select("#start-date");
     const endInput = d3.select("#end-date");
     const investmentInput = d3.select("#investment-amount");
 
-    // ******************TODO: ADD NEW SVG SELECTIONS**************************
-    // Add d3 selections for new SVG elements
-    // Copy the pattern -> (const name = d3.select("#id"))
-    // Done above
+    // add new svg selections
+    // add d3 selections for new SVG elements
+    // copy the pattern -> (const name = d3.select("#id"))
+    // done above
 
     let allRows = [];
     let dataExtent = null;
@@ -513,7 +503,7 @@
       investmentAmount: 10000
     };
 
-    // Load CSVs and boot the UI.
+    // load data, start ui
     Promise.all(
       companies.map((c) =>
         d3.csv(c.file, (d) => ({
@@ -596,7 +586,7 @@
       
       investmentInput.on("input", function() {
         const value = +this.value;
-        if (value >= 100) {  // Minimum $100 investment
+        if (value >= 100) {  // minimum $100 investment
           state.investmentAmount = value;
           update();
         }
@@ -619,34 +609,27 @@
         );
     }
 
-    // ******************TODO: CREATE HELPER FUNCTIONS**************************
     // ADD HELPER FUNCTIONS (before update())
 
-    // --- Aggregation helpers for the new bar charts ---
+    // aggregation helpers for the new bar charts ---
 
-    // Total traded volume per company in the current filtered window
+    // total traded volume per company in the current filtered window
     function getTotalVolumeByCompany(rows) {
-      // Group by company and sum volume
-      const rolledUp = d3.rollup(
-        rows,
-        values => d3.sum(values, d => d.volume),
-        d => d.company
-      );
+      // group by company and sum volume
+      const rolledUp = d3.rollup(rows, values => d3.sum(values, d => d.volume),d => d.company);
 
-      // Turn the Map into a sorted array of { company, totalVolume }
-      const volumeByCompany = Array.from(rolledUp, ([company, totalVolume]) => ({
-        company,
-        totalVolume
+      // turn map into a sorted array -> { company, totalVolume }
+      const volumeByCompany = Array.from(rolledUp, ([company, totalVolume]) => ({company,totalVolume
       })).sort((a, b) => d3.ascending(a.company, b.company)); // simple A→Z order
 
       return volumeByCompany;
     }
 
-    // Average daily high–low range per company (a rough volatility proxy)
+    // avg daily high–low range per company 
     function getAvgRangeByCompany(rows) {
       const rolledUp = d3.rollup(
         rows,
-        values => d3.mean(values, d => ((d.high - d.low)/d.close) * 100), // average daily range in percentage
+        values => d3.mean(values, d => (d.high - d.low)), // avg daily range
         d => d.company
       );
 
@@ -661,11 +644,7 @@
 
     function update() {
       const selectedRows = allRows.filter((d) => state.selected.has(d.company));
-      const filteredRows = state.range
-        ? selectedRows.filter(
-            (d) => d.date >= state.range[0] && d.date <= state.range[1]
-          )
-        : selectedRows;
+      const filteredRows = state.range ? selectedRows.filter( (d) => d.date >= state.range[0] && d.date <= state.range[1]) : selectedRows;
 
       updateChipStyles();
       syncDateInputs();
@@ -673,9 +652,9 @@
       renderPrice(filteredRows);
       renderOverview(selectedRows);
 
-      // New simpler summary charts:
-      //  - left: total volume by company (bar)
-      //  - right: average daily high–low range (bar)
+      // new simpler summary charts:
+      //  left: total volume by company
+      //  right: average daily high–low range (volatility)
       renderVolumeByCompany(filteredRows);
       renderVolatilityChart(filteredRows);
     }
@@ -702,10 +681,7 @@
       svg.selectAll("*").remove();
 
       const series = getSeries(filteredRows.length ? filteredRows : allRows);
-      const xDomain =
-        filteredRows.length > 1
-          ? d3.extent(filteredRows, (d) => d.date)
-          : dataExtent;
+      const xDomain = filteredRows.length > 1 ? d3.extent(filteredRows, (d) => d.date) : dataExtent;
       const x = d3.scaleTime().domain(xDomain).range([margin.left, width - margin.right]);
       const yMax = d3.max(series, (s) => d3.max(s.values, (d) => d.close)) || 1;
       const yMin = d3.min(series, (s) => d3.min(s.values, (d) => d.close)) || 0;
@@ -714,23 +690,17 @@
         .domain([yMin * 0.95, yMax * 1.05])
         .range([height - margin.bottom, margin.top]);
 
-      const xAxis = (g) =>
-        g.attr("transform", `translate(0,${height - margin.bottom})`).call(
+      const xAxis = (g) => g.attr("transform", `translate(0,${height - margin.bottom})`).call(
           d3.axisBottom(x).ticks(width < 700 ? 5 : 8)
         );
-      const yAxis = (g) =>
-        g
-          .attr("transform", `translate(${margin.left},0)`)
+      const yAxis = (g) => g.attr("transform", `translate(${margin.left},0)`)
           .call(d3.axisLeft(y).ticks(6).tickFormat(d3.format("$,.0f")))
           .call((g) => g.select(".domain").remove());
 
       svg.append("g").attr("class", "axis").call(xAxis);
       svg.append("g").attr("class", "axis").call(yAxis);
 
-      const line = d3
-        .line()
-        .x((d) => x(d.date))
-        .y((d) => y(d.close));
+      const line = d3.line().x((d) => x(d.date)).y((d) => y(d.close));
 
       svg
         .append("g")
@@ -771,8 +741,7 @@
         .on("mousemove", (event) => {
           const [mx] = d3.pointer(event, svg.node());
           const hoveredDate = x.invert(mx);
-          const rows = series
-            .map((s) => {
+          const rows = series.map((s) => {
               const idx = d3.bisector((d) => d.date).center(s.values, hoveredDate);
               const point = s.values[idx];
               if (!point) return null;
@@ -781,10 +750,7 @@
             .filter(Boolean);
 
           if (!rows.length) return;
-          focusLine
-            .style("display", "block")
-            .attr("x1", mx)
-            .attr("x2", mx);
+          focusLine.style("display", "block").attr("x1", mx).attr("x2", mx);
 
           positionTooltip(renderTooltip(rows, hoveredDate), event);
         })
@@ -797,12 +763,7 @@
     function renderTooltip(rows, date) {
       const rowsHtml = rows
         .sort((a, b) => b.close - a.close)
-        .map(
-          (r) =>
-            `<div class="tooltip-row"><span style="color:${color(r.name)};">●</span>${r.name}: $${r.close.toFixed(
-              2
-            )}</div>`
-        )
+        .map((r) => `<div class="tooltip-row"><span style="color:${color(r.name)};">●</span>${r.name}: $${r.close.toFixed(2)}</div>`)
         .join("");
       return `<div class="tooltip-date">${fmtDate(date)}</div>${rowsHtml}`;
     }
@@ -863,22 +824,23 @@
             [brushMargin.left, brushMargin.top],
             [width - brushMargin.right, height - brushMargin.bottom]
           ])
-          // only fire after the user finishes brushing
+          // wait until user finishes brushing
           .on("end", brushed);
-      } else {
+      } 
+      else {
         overviewBrush.extent([
           [brushMargin.left, brushMargin.top],
           [width - brushMargin.right, height - brushMargin.bottom]
         ]);
       }
 
-
       const brushG = svg.selectAll(".brush").data([null]).join("g").attr("class", "brush");
       brushG.call(overviewBrush);
 
       if (state.range) {
         brushG.call(overviewBrush.move, state.range.map((d) => x(d)));
-      } else {
+      } 
+      else {
         brushG.call(overviewBrush.move, null);
       }
 
@@ -886,7 +848,8 @@
         if (!event.sourceEvent) return;
         if (!event.selection) {
           state.range = null;
-        } else {
+        } 
+        else {
           const [x0, x1] = event.selection;
           state.range = [x.invert(x0), x.invert(x1)];
         }
@@ -894,9 +857,9 @@
         update();
       }
     }
-    // Simple bar chart: Total volume by company in the current window
+    // total volume by company in the current window
     function renderVolumeByCompany(filteredRows) {
-      const svg = normalizedSvg;  // reusing the "normalized" slot, but now it's volume
+      const svg = normalizedSvg; 
       const width = getWidth(svg.node());
       const height = 260;
       const margin = { top: 24, right: 24, bottom: 60, left: 80 };
@@ -904,7 +867,7 @@
       svg.attr("width", width).attr("height", height);
       svg.selectAll("*").remove();
 
-      // If there's no data in view, show a friendly message
+      // if there's no data in view, show a message
       if (!filteredRows.length) {
         svg.append("text")
           .attr("class", "empty")
@@ -922,13 +885,13 @@
         .range([margin.left, width - margin.right])
         .padding(0.3);
 
-      // --- FIX: give the log scale some padding below the min value ---
+      // FIX: give the log scale some padding below the min value 
       const minVol = d3.min(volumeByCompany, d => d.totalVolume);
       const maxVol = d3.max(volumeByCompany, d => d.totalVolume);
 
       const y = d3.scaleLog()
         .domain([
-          Math.max(minVol / 10, 1),   // a bit below the smallest bar, but > 0
+          Math.max(minVol / 10, 1), // a bit below the smallest bar, but > 0
           maxVol * 1.05
         ])
         .range([height - margin.bottom, margin.top]);
@@ -938,7 +901,7 @@
         .attr("transform", `translate(0,${height - margin.bottom})`)
         .call(d3.axisBottom(x))
         .selectAll("text")
-          .attr("dy", "0.8em");
+        .attr("dy", "0.8em");
 
       const yAxis = g => g
         .attr("transform", `translate(${margin.left},0)`)
@@ -959,7 +922,7 @@
           .attr("fill", d => color(d.company))
           .attr("rx", 4)
           .on("mousemove", (event, d) => {
-            // Quick tooltip with total volume
+            // quick tooltip with total volume
             positionTooltip(
               `<div class="tooltip-date">${d.company}</div>
               <div class="tooltip-row">Total volume: ${d3.format(",")(d.totalVolume)}</div>`,
@@ -968,7 +931,7 @@
           })
           .on("mouseleave", () => tooltip.style("opacity", 0));
 
-      // Y-axis label
+      // y-axis label
       svg.append("text")
         .attr("class", "axis-label")
         .attr("x", margin.left)
@@ -977,7 +940,7 @@
     }
 
 
-    // Simple bar chart: average daily high–low range per company
+    // average daily high–low range per company
     function renderVolatilityChart(filteredRows) {
       const svg = volatilitySvg;
       const width = getWidth(svg.node());
@@ -1015,8 +978,7 @@
 
       const yAxis = g => g
         .attr("transform", `translate(${margin.left},0)`)
-        // .call(d3.axisLeft(y).ticks(5, d3.format("$.2f")))
-        .call(d3.axisLeft(y).ticks(5).tickFormat(d => `${d.toFixed(1)}%`))
+        .call(d3.axisLeft(y).ticks(5, d3.format("$.2f")))
         .call(g => g.select(".domain").remove());
 
       svg.append("g").attr("class", "axis").call(xAxis);
@@ -1035,14 +997,13 @@
           .on("mousemove", (event, d) => {
             positionTooltip(
               `<div class="tooltip-date">${d.company}</div>
-              
-              <div class="tooltip-row">Avg daily range: ${d.avgRange.toFixed(2)}%</div>`,
+              <div class="tooltip-row">Avg daily range: $${d.avgRange.toFixed(2)}</div>`,
               event
             );
           })
           .on("mouseleave", () => tooltip.style("opacity", 0));
 
-      // Axis labels
+      // axis labels
       svg.append("text")
         .attr("class", "axis-label")
         .attr("x", width / 2)
@@ -1056,7 +1017,7 @@
         .attr("x", -height / 2)
         .attr("y", margin.left - 55)
         .attr("text-anchor", "middle")
-        .text("Avg percentage daily high–low range (%)");
+        .text("Avg daily high–low range ($)");
     }
 
 
@@ -1148,9 +1109,7 @@
 
       const res = Array.from(monthly, ([month, companies]) => {
         const obj = { date: new Date(month) };
-        selected.forEach((name) => {
-          obj[name] = companies.get(name) || 0;
-        });
+        selected.forEach((name) => {obj[name] = companies.get(name) || 0;});
         return obj;
       }).sort((a, b) => a.date - b.date);
 
@@ -1195,7 +1154,7 @@
         .attr("transform", `translate(${margin.left},0)`)
         .call(
           d3.axisLeft(y)
-            .ticks(5, "~s")        // ~s = abbreviated (1M, 1B, 1T, etc.)
+            .ticks(5, "~s") // ~s = abbreviated (1M, 1B, 1T, etc)
         )
         .call(g => g.select(".domain").remove());
 
@@ -1268,9 +1227,7 @@
     function updateSummary(filteredRows) {
       const summary = d3.select("#summary");
       const selection = Array.from(state.selected);
-      const rangeText = state.range
-        ? `${fmtDate(state.range[0])} - ${fmtDate(state.range[1])}`
-        : "Full history";
+      const rangeText = state.range ? `${fmtDate(state.range[0])} - ${fmtDate(state.range[1])}` : "Full history";
 
       // get investment returns from the helper function just made
       const returns = calculateInvestmentReturns(filteredRows);
