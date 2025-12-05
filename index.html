@@ -426,26 +426,41 @@
         </figure>
 
         <section class="grid-two">
+          <!-- ******************TODO: NORMALIZED PRICE CHART (Left Chart)************************** -->
+          <!-- 
+               All stocks start at 100 -> shows relative % growth
+               Helps a lot with easy comparison -> which stock performed best?
+          -->
           <figure class="chart-card">
             <figcaption class="chart-title">
               <header>
-                <p class="eyebrow">Volume</p>
-                <h2>Monthly volume share</h2>
+                <p class="eyebrow">Performance</p>
+                <h2>Normalized Price (Indexed to 100)</h2>
               </header>
             </figcaption>
-            <svg id="volume-chart" role="img" aria-label="Volume chart showing monthly trading volume"></svg>
+            <svg id="normalized-chart" role="img" aria-label="Normalized price chart showing percent changes"></svg>
           </figure>
 
+          <!-- ******************TODO: VOLATILITY CHART (Right Chart)************************** -->
+          <!-- 
+               Bars showing daily high-low range
+               Shows which stocks are riskier/more stable
+          -->
           <figure class="chart-card">
             <figcaption class="chart-title">
               <header>
-                <p class="eyebrow">Returns</p>
-                <h2>Daily return vs volume</h2>
+                <p class="eyebrow">Risk</p>
+                <h2>Price Volatility from High to Low</h2>
               </header>
             </figcaption>
-            <svg id="scatter-chart" role="img" aria-label="Scatter plot showing daily return versus volume"></svg>
+            <svg id="volatility-chart" role="img" aria-label="Volatility chart showing daily price ranges"></svg>
           </figure>
         </section>
+
+        <!-- ******************TODO: CORRELATION HEATMAP (OPTIONAL)************************** -->
+        <!-- 
+             Grid showing which stocks move together
+        -->
       </main>
     </article>
   </div>
@@ -472,12 +487,20 @@
 
     const priceSvg = d3.select("#price-chart");
     const overviewSvg = d3.select("#overview-chart");
-    const volumeSvg = d3.select("#volume-chart");
-    const scatterSvg = d3.select("#scatter-chart");
+    // const volumeSvg = d3.select("#volume-chart");
+    // const scatterSvg = d3.select("#scatter-chart");
+    const normalizedSvg = d3.select("#normalized-chart");
+    const volatilitySvg = d3.select("#volatility-chart");
+    // const heatmapSvg = d3.select("#heatmap-chart"); if we decide to add a heatmap
     const tooltip = d3.select("#tooltip");
     const startInput = d3.select("#start-date");
     const endInput = d3.select("#end-date");
     const investmentInput = d3.select("#investment-amount");
+
+    // ******************TODO: ADD NEW SVG SELECTIONS**************************
+    // Add d3 selections for new SVG elements
+    // Copy the pattern -> (const name = d3.select("#id"))
+    // Done above
 
     let allRows = [];
     let dataExtent = null;
@@ -595,6 +618,16 @@
         );
     }
 
+    // ******************TODO: CREATE HELPER FUNCTIONS**************************
+    // ADD HELPER FUNCTIONS (before update())
+
+    function normalizeData(companyData) {
+      const price = companyData[0].close;
+
+      transformed = companyData.map(d => ({...d, close: (d.close / price) * 100}))
+      return transformed;
+    }
+
     function update() {
       const selectedRows = allRows.filter((d) => state.selected.has(d.company));
       const filteredRows = state.range
@@ -608,8 +641,12 @@
       updateSummary(filteredRows);
       renderPrice(filteredRows);
       renderOverview(selectedRows);
-      renderVolume(filteredRows);
-      renderScatter(filteredRows);
+      
+      // ******************TODO: CALL NEW RENDER FUNCTIONS**************************
+      // Replace the commented out functions with new ones
+
+      // renderVolume(filteredRows);  // delete 
+      renderScatter(filteredRows);    // replace w/ renderVolatility
     }
 
     function getSeries(rows) {
@@ -825,81 +862,81 @@
       }
     }
 
-    function renderVolume(filteredRows) {
-      const svg = volumeSvg;
-      const width = getWidth(svg.node());
-      const height = 260;
-      const margin = { top: 16, right: 24, bottom: 34, left: 60 };
+    // function renderVolume(filteredRows) {
+    //   const svg = volumeSvg;
+    //   const width = getWidth(svg.node());
+    //   const height = 260;
+    //   const margin = { top: 16, right: 24, bottom: 34, left: 60 };
 
-      svg.attr("width", width).attr("height", height);
-      svg.selectAll("*").remove();
+    //   svg.attr("width", width).attr("height", height);
+    //   svg.selectAll("*").remove();
 
-      const monthly = buildMonthlyVolume(filteredRows);
-      if (!monthly.length) {
-        svg
-          .append("text")
-          .attr("class", "empty")
-          .attr("x", width / 2)
-          .attr("y", height / 2)
-          .attr("text-anchor", "middle")
-          .text("No data in view");
-        return;
-      }
+    //   const monthly = buildMonthlyVolume(filteredRows);
+    //   if (!monthly.length) {
+    //     svg
+    //       .append("text")
+    //       .attr("class", "empty")
+    //       .attr("x", width / 2)
+    //       .attr("y", height / 2)
+    //       .attr("text-anchor", "middle")
+    //       .text("No data in view");
+    //     return;
+    //   }
 
-      const selectedKeys = Array.from(state.selected);
-      const x = d3
-        .scaleTime()
-        .domain(d3.extent(monthly, (d) => d.date))
-        .range([margin.left, width - margin.right]);
+    //   const selectedKeys = Array.from(state.selected);
+    //   const x = d3
+    //     .scaleTime()
+    //     .domain(d3.extent(monthly, (d) => d.date))
+    //     .range([margin.left, width - margin.right]);
 
-      const y = d3
-        .scaleLinear()
-        .domain([
-          0,
-          d3.max(monthly, (d) =>
-            selectedKeys.reduce((sum, key) => sum + (d[key] || 0), 0)
-          ) * 1.05
-        ])
-        .range([height - margin.bottom, margin.top]);
+    //   const y = d3
+    //     .scaleLinear()
+    //     .domain([
+    //       0,
+    //       d3.max(monthly, (d) =>
+    //         selectedKeys.reduce((sum, key) => sum + (d[key] || 0), 0)
+    //       ) * 1.05
+    //     ])
+    //     .range([height - margin.bottom, margin.top]);
 
-      svg
-        .append("g")
-        .attr("class", "axis")
-        .attr("transform", `translate(0,${height - margin.bottom})`)
-        .call(d3.axisBottom(x).ticks(width < 700 ? 4 : 7));
+    //   svg
+    //     .append("g")
+    //     .attr("class", "axis")
+    //     .attr("transform", `translate(0,${height - margin.bottom})`)
+    //     .call(d3.axisBottom(x).ticks(width < 700 ? 4 : 7));
 
-      svg
-        .append("g")
-        .attr("class", "axis")
-        .attr("transform", `translate(${margin.left},0)`)
-        .call(d3.axisLeft(y).ticks(5, "~s"))
-        .call((g) => g.select(".domain").remove());
+    //   svg
+    //     .append("g")
+    //     .attr("class", "axis")
+    //     .attr("transform", `translate(${margin.left},0)`)
+    //     .call(d3.axisLeft(y).ticks(5, "~s"))
+    //     .call((g) => g.select(".domain").remove());
 
-      const stack = d3.stack().keys(selectedKeys);
-      const stacked = stack(monthly);
+    //   const stack = d3.stack().keys(selectedKeys);
+    //   const stacked = stack(monthly);
 
-      const area = d3
-        .area()
-        .x((d) => x(d.data.date))
-        .y0((d) => y(d[0]))
-        .y1((d) => y(d[1]));
+    //   const area = d3
+    //     .area()
+    //     .x((d) => x(d.data.date))
+    //     .y0((d) => y(d[0]))
+    //     .y1((d) => y(d[1]));
 
-      svg
-        .append("g")
-        .selectAll("path")
-        .data(stacked)
-        .join("path")
-        .attr("fill", (d) => color(d.key))
-        .attr("opacity", 0.82)
-        .attr("d", area);
+    //   svg
+    //     .append("g")
+    //     .selectAll("path")
+    //     .data(stacked)
+    //     .join("path")
+    //     .attr("fill", (d) => color(d.key))
+    //     .attr("opacity", 0.82)
+    //     .attr("d", area);
 
-      svg
-        .append("text")
-        .attr("class", "axis-label")
-        .attr("x", margin.left)
-        .attr("y", margin.top - 4)
-        .text("Stacked volume · monthly");
-    }
+    //   svg
+    //     .append("text")
+    //     .attr("class", "axis-label")
+    //     .attr("x", margin.left)
+    //     .attr("y", margin.top - 4)
+    //     .text("Stacked volume · monthly");
+    // }
 
     function buildMonthlyVolume(rows) {
       const selected = Array.from(state.selected);
