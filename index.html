@@ -451,7 +451,7 @@
             <figcaption class="chart-title">
               <header>
                 <p class="eyebrow">Risk</p>
-                <h2>Price Volatility</h2>
+                <h2>Price Volatility (%)</h2>
               </header>
             </figcaption>
             <svg id="volatility-chart" role="img" aria-label="Volatility chart showing daily price ranges"></svg>
@@ -646,7 +646,7 @@
     function getAvgRangeByCompany(rows) {
       const rolledUp = d3.rollup(
         rows,
-        values => d3.mean(values, d => (d.high - d.low)), // average daily range
+        values => d3.mean(values, d => ((d.high - d.low)/d.close) * 100), // average daily range in percentage
         d => d.company
       );
 
@@ -1015,7 +1015,7 @@
 
       const yAxis = g => g
         .attr("transform", `translate(${margin.left},0)`)
-        .call(d3.axisLeft(y).ticks(5, d3.format("$.2f")))
+        .call(d3.axisLeft(y).ticks(5).tickFormat(d => `${d.toFixed(1)}%`))
         .call(g => g.select(".domain").remove());
 
       svg.append("g").attr("class", "axis").call(xAxis);
@@ -1034,7 +1034,7 @@
           .on("mousemove", (event, d) => {
             positionTooltip(
               `<div class="tooltip-date">${d.company}</div>
-              <div class="tooltip-row">Avg daily range: $${d.avgRange.toFixed(2)}</div>`,
+              <div class="tooltip-row">Avg daily range: ${d.avgRange.toFixed(2)}%</div>`,
               event
             );
           })
@@ -1054,7 +1054,7 @@
         .attr("x", -height / 2)
         .attr("y", margin.left - 55)
         .attr("text-anchor", "middle")
-        .text("Avg daily high–low range ($)");
+        .text("Avg percentage daily high–low range (%)");
     }
 
 
