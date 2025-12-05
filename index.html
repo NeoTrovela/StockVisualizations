@@ -1015,6 +1015,7 @@
 
       const yAxis = g => g
         .attr("transform", `translate(${margin.left},0)`)
+        // .call(d3.axisLeft(y).ticks(5, d3.format("$.2f")))
         .call(d3.axisLeft(y).ticks(5).tickFormat(d => `${d.toFixed(1)}%`))
         .call(g => g.select(".domain").remove());
 
@@ -1034,6 +1035,7 @@
           .on("mousemove", (event, d) => {
             positionTooltip(
               `<div class="tooltip-date">${d.company}</div>
+              
               <div class="tooltip-row">Avg daily range: ${d.avgRange.toFixed(2)}%</div>`,
               event
             );
