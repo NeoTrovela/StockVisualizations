@@ -130,7 +130,6 @@
       border: 1px solid #e2e8f0;
       cursor: pointer;
       font-size: 13px;
-      transition: background-color 150ms ease, border-color 150ms ease, transform 120ms ease, box-shadow 150ms ease;
     }
 
     .chip input { display: none; }
@@ -143,12 +142,6 @@
       background: #dbeafe;
       border-color: #2563eb;
       box-shadow: 0 6px 14px rgba(37, 99, 235, 0.15);
-      animation: selectPulse 140ms ease-out;
-    }
-
-    @keyframes selectPulse {
-      from { transform: scale(0.98); }
-      to { transform: scale(1); }
     }
 
     .summary {
@@ -286,16 +279,11 @@
 
     .tooltip {
       position: fixed;
-      pointer-events: none;
       background: #ffffff;
       border: 1px solid #e2e8f0;
       color: #0f172a;
       padding: 10px 12px;
       border-radius: 8px;
-      box-shadow: 0 10px 30px rgba(15, 23, 42, 0.12);
-      font-size: 13px;
-      opacity: 0;
-      transition: opacity 80ms ease;
     }
 
     .tooltip-date {
