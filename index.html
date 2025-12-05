@@ -566,7 +566,6 @@
         }
       });
 
-      window.addEventListener("resize", () => update());
       renderLegend();
       syncDateInputs();
       updateChipStyles();
@@ -1255,26 +1254,9 @@
     }
 
     function positionTooltip(html, event) {
-      tooltip.html(html).style("opacity", 1);
-      const padding = 12;
-      const rect = tooltip.node().getBoundingClientRect();
-      const vw = window.innerWidth;
-      const vh = window.innerHeight;
-      const { clientX, clientY } = event;
-
-      let x = clientX + padding;
-      if (x + rect.width + padding > vw) {
-        x = clientX - rect.width - padding;
-      }
-      if (x < 8) x = 8;
-
-      let y = clientY - 10;
-      if (y + rect.height + padding > vh) {
-        y = clientY - rect.height - padding;
-      }
-      if (y < 8) y = 8;
-
-      tooltip.style("left", `${x}px`).style("top", `${y}px`);
+      tooltip.html(html).style("opacity", 1)
+        .style("left", (event.pageX + 15) + "px")
+        .style("top", (event.pageY - 10) + "px");
     }
 
     function getWidth(svgNode) {
