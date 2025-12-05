@@ -362,72 +362,95 @@
 <body>
   <div class="page">
     <header class="hero">
-      <div>
-        <div class="eyebrow">Assignment 3 - Interactive Visualization</div>
+      <section>
+        <p class="eyebrow">Assignment 3 - Interactive Visualization</p>
         <h1>FAANG Stock Explorer</h1>
         <p>Ian Evensen and Neo Trovela-Villamiel</p>
         <p>CS333 - Fall 2025</p>
         <p>Implements dynamic queries and brushing+linking for FAANG stock data</p>
         <p>Perfect for data exploration and analysis</p>
-      </div>
+      </section>
     </header>
 
-    <section class="layout">
+    <article class="layout">
       <aside id="controls">
         <h3>Filters</h3>
-        <div id="company-picker" class="chip-row"></div>
-        <div style="margin-top: 12px; display: flex; gap: 8px; flex-wrap: wrap;">
-          <button id="reset-selection" class="btn secondary">Reset companies</button>
-          <button id="reset-brush" class="btn secondary">Reset brush</button>
-        </div>
-        <div class="control-label">Date range</div>
-        <div class="date-row">
-          <input type="date" id="start-date">
-          <input type="date" id="end-date">
-        </div>
-        <div class="summary" id="summary"></div>
+        <form id="controls-form">
+          <fieldset style="border: none; padding: 0; margin: 0;">
+            <legend style="display: none;">Company Selection</legend>
+            <nav id="company-picker" class="chip-row" aria-label="Company selection"></nav>
+          </fieldset>
+          
+          <nav style="margin-top: 12px; display: flex; gap: 8px; flex-wrap: wrap;" aria-label="Reset controls">
+            <button type="button" id="reset-selection" class="btn secondary">Reset companies</button>
+            <button type="button" id="reset-brush" class="btn secondary">Reset brush</button>
+          </nav>
+          
+          <fieldset style="border: none; padding: 0; margin-top: 12px;">
+            <legend class="control-label">Date range</legend>
+            <div class="date-row">
+              <label for="start-date" style="display: none;">Start date</label>
+              <input type="date" id="start-date" aria-label="Start date">
+              <label for="end-date" style="display: none;">End date</label>
+              <input type="date" id="end-date" aria-label="End date">
+            </div>
+          </fieldset>
+          
+          <fieldset style="border: none; padding: 0; margin-top: 12px;">
+            <legend class="control-label">Investment amount (Default $10,000)</legend>
+            <div style="display: flex; gap: 8px; align-items: center;">
+              <label for="investment-amount" style="font-size: 14px; color: #64748b;">$</label>
+              <input type="number" id="investment-amount" value="10000" min="100" step="100" 
+                     aria-label="Investment amount in dollars"
+                     style="flex: 1; padding: 6px 8px; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 13px; color: #0f172a; background: #ffffff;">
+            </div>
+            <p class="note">Enter how much you would invest</p>
+          </fieldset>
+        </form>
+        
+        <section class="summary" id="summary" aria-live="polite"></section>
       </aside>
 
       <main id="viz-area">
-        <div class="chart-card">
-          <div class="chart-title">
-            <div>
-              <div class="eyebrow">Prices</div>
+        <figure class="chart-card">
+          <figcaption class="chart-title">
+            <header>
+              <p class="eyebrow">Prices</p>
               <h2>Close price over time</h2>
-            </div>
-            <div class="legend" id="legend"></div>
-          </div>
-          <svg id="price-chart"></svg>
-          <div style="margin: 6px 0 4px 8px;" class="eyebrow">Overview · brush to filter</div>
-          <svg id="overview-chart"></svg>
-        </div>
+            </header>
+            <nav class="legend" id="legend" aria-label="Chart legend"></nav>
+          </figcaption>
+          <svg id="price-chart" role="img" aria-label="Price chart showing closing prices over time"></svg>
+          <p style="margin: 6px 0 4px 8px;" class="eyebrow">Overview · brush to filter</p>
+          <svg id="overview-chart" role="img" aria-label="Overview chart with brush selection"></svg>
+        </figure>
 
-        <div class="grid-two">
-          <div class="chart-card">
-            <div class="chart-title">
-              <div>
-                <div class="eyebrow">Volume</div>
+        <section class="grid-two">
+          <figure class="chart-card">
+            <figcaption class="chart-title">
+              <header>
+                <p class="eyebrow">Volume</p>
                 <h2>Monthly volume share</h2>
-              </div>
-            </div>
-            <svg id="volume-chart"></svg>
-          </div>
+              </header>
+            </figcaption>
+            <svg id="volume-chart" role="img" aria-label="Volume chart showing monthly trading volume"></svg>
+          </figure>
 
-          <div class="chart-card">
-            <div class="chart-title">
-              <div>
-                <div class="eyebrow">Returns</div>
+          <figure class="chart-card">
+            <figcaption class="chart-title">
+              <header>
+                <p class="eyebrow">Returns</p>
                 <h2>Daily return vs volume</h2>
-              </div>
-            </div>
-            <svg id="scatter-chart"></svg>
-          </div>
-        </div>
+              </header>
+            </figcaption>
+            <svg id="scatter-chart" role="img" aria-label="Scatter plot showing daily return versus volume"></svg>
+          </figure>
+        </section>
       </main>
-    </section>
+    </article>
   </div>
 
-  <div id="tooltip" class="tooltip"></div>
+  <aside id="tooltip" class="tooltip" role="tooltip" aria-hidden="true"></aside>
 
   <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
   <script>
@@ -454,6 +477,7 @@
     const tooltip = d3.select("#tooltip");
     const startInput = d3.select("#start-date");
     const endInput = d3.select("#end-date");
+    const investmentInput = d3.select("#investment-amount");
 
     let allRows = [];
     let dataExtent = null;
@@ -461,7 +485,8 @@
     let overviewX = null;
     let state = {
       selected: new Set(companies.map(d => d.name)),
-      range: null
+      range: null,
+      investmentAmount: 10000
     };
 
     // Load CSVs and boot the UI.
@@ -544,6 +569,14 @@
 
       startInput.on("change", onDateInputChange);
       endInput.on("change", onDateInputChange);
+      
+      investmentInput.on("input", function() {
+        const value = +this.value;
+        if (value >= 100) {  // Minimum $100 investment
+          state.investmentAmount = value;
+          update();
+        }
+      });
 
       window.addEventListener("resize", () => update());
       renderLegend();
@@ -967,17 +1000,66 @@
         .text("Volume (log scale)");
     }
 
+    function calculateInvestmentReturns(filteredRows) { // helper function to calculate investment returns
+      const investment = state.investmentAmount; // inputted investment amount
+      
+      return Array.from(state.selected).map(companyName => {
+        const companyData = filteredRows
+          .filter(d => d.company === companyName)
+          .sort((a, b) => a.date - b.date);
+        
+        if (companyData.length < 2) return null;
+        
+        const startPrice = companyData[0].close;
+        const endPrice = companyData[companyData.length - 1].close;
+        const sharesBought = investment / startPrice;
+        const finalValue = sharesBought * endPrice;
+        const profit = finalValue - investment;
+        const percentReturn = ((endPrice - startPrice) / startPrice) * 100;
+        
+        return {
+          company: companyName,
+          finalValue: finalValue,
+          profit: profit,
+          percentReturn: percentReturn
+        };
+      }).filter(Boolean);
+    }
+
     function updateSummary(filteredRows) {
       const summary = d3.select("#summary");
       const selection = Array.from(state.selected);
       const rangeText = state.range
-        ? `${fmtDate(state.range[0])} → ${fmtDate(state.range[1])}`
+        ? `${fmtDate(state.range[0])} - ${fmtDate(state.range[1])}`
         : "Full history";
+
+      // get investment returns from the helper function just made
+      const returns = calculateInvestmentReturns(filteredRows);
+      
+      // make investment returns into HTML
+      const returnsHtml = returns.length > 0 ? `
+        <div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid #e2e8f0;">
+          <strong>$${state.investmentAmount.toLocaleString()} Investment Returns</strong>
+          ${returns.map(r => `
+            <div style="margin-top: 8px; padding: 8px; background: ${r.profit >= 0 ? '#d4edda' : '#f8d7da'}; border-radius: 6px; border: 1px solid ${r.profit >= 0 ? '#c3e6cb' : '#f5c6cb'};">
+              <div style="font-weight: 600; color: ${color(r.company)}; margin-bottom: 4px;">${r.company}</div>
+              <div style="font-size: 13px;">
+                <div>Final Value: <strong>$${r.finalValue.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</strong></div>
+                <div style="color: ${r.profit >= 0 ? '#155724' : '#721c24'}; font-weight: 600;">
+                  ${r.profit >= 0 ? '+' : ''}$${r.profit.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})} 
+                  (${r.percentReturn >= 0 ? '+' : ''}${r.percentReturn.toFixed(2)}%)
+                </div>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      ` : '';
 
       summary.html(`
         <div><strong>Companies:</strong> ${selection.join(", ")}</div>
         <div><strong>Window:</strong> ${rangeText}</div>
         <div><strong>Points in view:</strong> ${filteredRows.length.toLocaleString()}</div>
+        ${returnsHtml}
       `);
     }
 
