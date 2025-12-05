@@ -434,12 +434,13 @@
           <figure class="chart-card">
             <figcaption class="chart-title">
               <header>
-                <p class="eyebrow">Performance</p>
-                <h2>Normalized Price (Indexed to 100)</h2>
+                <p class="eyebrow">Volume</p>
+                <h2>Total Volume by Company</h2>
               </header>
             </figcaption>
-            <svg id="normalized-chart" role="img" aria-label="Normalized price chart showing percent changes"></svg>
+            <svg id="normalized-chart" role="img" aria-label="Bar chart showing total traded volume by company"></svg>
           </figure>
+
 
           <!-- ******************TODO: VOLATILITY CHART (Right Chart)************************** -->
           <!-- 
@@ -450,7 +451,7 @@
             <figcaption class="chart-title">
               <header>
                 <p class="eyebrow">Risk</p>
-                <h2>Price Volatility from High to Low</h2>
+                <h2>Price Volatility</h2>
               </header>
             </figcaption>
             <svg id="volatility-chart" role="img" aria-label="Volatility chart showing daily price ranges"></svg>
@@ -621,12 +622,42 @@
     // ******************TODO: CREATE HELPER FUNCTIONS**************************
     // ADD HELPER FUNCTIONS (before update())
 
-    function normalizeData(companyData) {
-      const price = companyData[0].close;
+    // --- Aggregation helpers for the new bar charts ---
 
-      transformed = companyData.map(d => ({...d, close: (d.close / price) * 100}))
-      return transformed;
+    // Total traded volume per company in the current filtered window
+    function getTotalVolumeByCompany(rows) {
+      // Group by company and sum volume
+      const rolledUp = d3.rollup(
+        rows,
+        values => d3.sum(values, d => d.volume),
+        d => d.company
+      );
+
+      // Turn the Map into a sorted array of { company, totalVolume }
+      const volumeByCompany = Array.from(rolledUp, ([company, totalVolume]) => ({
+        company,
+        totalVolume
+      })).sort((a, b) => d3.ascending(a.company, b.company)); // simple A→Z order
+
+      return volumeByCompany;
     }
+
+    // Average daily high–low range per company (a rough volatility proxy)
+    function getAvgRangeByCompany(rows) {
+      const rolledUp = d3.rollup(
+        rows,
+        values => d3.mean(values, d => (d.high - d.low)), // average daily range
+        d => d.company
+      );
+
+      const rangeByCompany = Array.from(rolledUp, ([company, avgRange]) => ({
+        company,
+        avgRange
+      })).sort((a, b) => d3.ascending(a.company, b.company));
+
+      return rangeByCompany;
+    }
+
 
     function update() {
       const selectedRows = allRows.filter((d) => state.selected.has(d.company));
@@ -641,13 +672,15 @@
       updateSummary(filteredRows);
       renderPrice(filteredRows);
       renderOverview(selectedRows);
-      
-      // ******************TODO: CALL NEW RENDER FUNCTIONS**************************
-      // Replace the commented out functions with new ones
 
-      // renderVolume(filteredRows);  // delete 
-      renderScatter(filteredRows);    // replace w/ renderVolatility
+      // New simpler summary charts:
+      //  - left: total volume by company (bar)
+      //  - right: average daily high–low range (bar)
+      renderVolumeByCompany(filteredRows);
+      renderVolatilityChart(filteredRows);
     }
+
+
 
     function getSeries(rows) {
       const grouped = d3.group(rows, (d) => d.company);
@@ -861,6 +894,170 @@
         update();
       }
     }
+    // Simple bar chart: Total volume by company in the current window
+    function renderVolumeByCompany(filteredRows) {
+      const svg = normalizedSvg;  // reusing the "normalized" slot, but now it's volume
+      const width = getWidth(svg.node());
+      const height = 260;
+      const margin = { top: 24, right: 24, bottom: 60, left: 80 };
+
+      svg.attr("width", width).attr("height", height);
+      svg.selectAll("*").remove();
+
+      // If there's no data in view, show a friendly message
+      if (!filteredRows.length) {
+        svg.append("text")
+          .attr("class", "empty")
+          .attr("x", width / 2)
+          .attr("y", height / 2)
+          .attr("text-anchor", "middle")
+          .text("No data in view");
+        return;
+      }
+
+      const volumeByCompany = getTotalVolumeByCompany(filteredRows);
+
+      const x = d3.scaleBand()
+        .domain(volumeByCompany.map(d => d.company))
+        .range([margin.left, width - margin.right])
+        .padding(0.3);
+
+      // --- FIX: give the log scale some padding below the min value ---
+      const minVol = d3.min(volumeByCompany, d => d.totalVolume);
+      const maxVol = d3.max(volumeByCompany, d => d.totalVolume);
+
+      const y = d3.scaleLog()
+        .domain([
+          Math.max(minVol / 10, 1),   // a bit below the smallest bar, but > 0
+          maxVol * 1.05
+        ])
+        .range([height - margin.bottom, margin.top]);
+
+
+      const xAxis = g => g
+        .attr("transform", `translate(0,${height - margin.bottom})`)
+        .call(d3.axisBottom(x))
+        .selectAll("text")
+          .attr("dy", "0.8em");
+
+      const yAxis = g => g
+        .attr("transform", `translate(${margin.left},0)`)
+        .call(d3.axisLeft(y).ticks(5, "~s"))
+        .call(g => g.select(".domain").remove());
+
+      svg.append("g").attr("class", "axis").call(xAxis);
+      svg.append("g").attr("class", "axis").call(yAxis);
+
+      svg.append("g")
+        .selectAll("rect")
+        .data(volumeByCompany)
+        .join("rect")
+          .attr("x", d => x(d.company))
+          .attr("y", d => y(d.totalVolume))
+          .attr("width", x.bandwidth())
+          .attr("height", d => (height - margin.bottom) - y(d.totalVolume))
+          .attr("fill", d => color(d.company))
+          .attr("rx", 4)
+          .on("mousemove", (event, d) => {
+            // Quick tooltip with total volume
+            positionTooltip(
+              `<div class="tooltip-date">${d.company}</div>
+              <div class="tooltip-row">Total volume: ${d3.format(",")(d.totalVolume)}</div>`,
+              event
+            );
+          })
+          .on("mouseleave", () => tooltip.style("opacity", 0));
+
+      // Y-axis label
+      svg.append("text")
+        .attr("class", "axis-label")
+        .attr("x", margin.left)
+        .attr("y", margin.top - 4)
+        .text("Total traded volume (log scale)");
+    }
+
+
+    // Simple bar chart: average daily high–low range per company
+    function renderVolatilityChart(filteredRows) {
+      const svg = volatilitySvg;
+      const width = getWidth(svg.node());
+      const height = 260;
+      const margin = { top: 24, right: 24, bottom: 60, left: 80 };
+
+      svg.attr("width", width).attr("height", height);
+      svg.selectAll("*").remove();
+
+      if (!filteredRows.length) {
+        svg.append("text")
+          .attr("class", "empty")
+          .attr("x", width / 2)
+          .attr("y", height / 2)
+          .attr("text-anchor", "middle")
+          .text("No data in view");
+        return;
+      }
+
+      const rangeByCompany = getAvgRangeByCompany(filteredRows);
+
+      const x = d3.scaleBand()
+        .domain(rangeByCompany.map(d => d.company))
+        .range([margin.left, width - margin.right])
+        .padding(0.3);
+
+      const y = d3.scaleLinear()
+        .domain([0, d3.max(rangeByCompany, d => d.avgRange) * 1.1])
+        .nice()
+        .range([height - margin.bottom, margin.top]);
+
+      const xAxis = g => g
+        .attr("transform", `translate(0,${height - margin.bottom})`)
+        .call(d3.axisBottom(x));
+
+      const yAxis = g => g
+        .attr("transform", `translate(${margin.left},0)`)
+        .call(d3.axisLeft(y).ticks(5, d3.format("$.2f")))
+        .call(g => g.select(".domain").remove());
+
+      svg.append("g").attr("class", "axis").call(xAxis);
+      svg.append("g").attr("class", "axis").call(yAxis);
+
+      svg.append("g")
+        .selectAll("rect")
+        .data(rangeByCompany)
+        .join("rect")
+          .attr("x", d => x(d.company))
+          .attr("y", d => y(d.avgRange))
+          .attr("width", x.bandwidth())
+          .attr("height", d => (height - margin.bottom) - y(d.avgRange))
+          .attr("fill", d => color(d.company))
+          .attr("rx", 4)
+          .on("mousemove", (event, d) => {
+            positionTooltip(
+              `<div class="tooltip-date">${d.company}</div>
+              <div class="tooltip-row">Avg daily range: $${d.avgRange.toFixed(2)}</div>`,
+              event
+            );
+          })
+          .on("mouseleave", () => tooltip.style("opacity", 0));
+
+      // Axis labels
+      svg.append("text")
+        .attr("class", "axis-label")
+        .attr("x", width / 2)
+        .attr("y", height - 8)
+        .attr("text-anchor", "middle")
+        .text("Company");
+
+      svg.append("text")
+        .attr("class", "axis-label")
+        .attr("transform", "rotate(-90)")
+        .attr("x", -height / 2)
+        .attr("y", margin.left - 55)
+        .attr("text-anchor", "middle")
+        .text("Avg daily high–low range ($)");
+    }
+
+
 
     // function renderVolume(filteredRows) {
     //   const svg = volumeSvg;
@@ -991,12 +1188,15 @@
         .attr("transform", `translate(0,${height - margin.bottom})`)
         .call(d3.axisBottom(x).ticks(6).tickFormat((d) => `${d}%`));
 
-      svg
-        .append("g")
+      svg.append("g")
         .attr("class", "axis")
         .attr("transform", `translate(${margin.left},0)`)
-        .call(d3.axisLeft(y).ticks(6, "~s"))
-        .call((g) => g.select(".domain").remove());
+        .call(
+          d3.axisLeft(y)
+            .ticks(5, "~s")        // ~s = abbreviated (1M, 1B, 1T, etc.)
+        )
+        .call(g => g.select(".domain").remove());
+
 
       svg
         .append("g")
